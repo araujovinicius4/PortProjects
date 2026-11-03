@@ -359,16 +359,25 @@ if ($SomenteProblemas) {
   $resultados = $resultados |
     Where-Object {
 
-      $_.Situacao -ne 'SINCRONIZADO'
+    $_.Situacao -ne 'SINCRONIZADO'
 
-    }
+  }
 }
 
 if ($resultados.Count -eq 0) {
-  Write-Host 'Nenhum repositório Git encontrado.'
+
+  if ($SomenteProblemas) {
+
+    Write-Host ''
+    Write-Host 'Nenhum projeto com problemas encontrado.' -ForegroundColor Green
+  }
+  else {
+
+    Write-Host 'Nenhum repositório Git encontrado.'
+  }
+
   exit
 }
-
 $total = $resultados.Count
 
 $saudaveis = (
@@ -462,45 +471,45 @@ $jsonData |
   -Encoding UTF8 `
   -Path $json
 
-  $historicoPath = Join-Path $Pasta 'historico-git.json'
+$historicoPath = Join-Path $Pasta 'historico-git.json'
 
 $novaEntrada = [pscustomobject]@{
 
-    DataExecucao = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+  DataExecucao = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
 
-    TotalProjetos = $total
+  TotalProjetos = $total
 
-    IndiceSaude = $indiceSaude
+  IndiceSaude = $indiceSaude
 }
 
 $historico = @()
 
 if (Test-Path $historicoPath) {
 
-    try {
+  try {
 
-        $historico = Get-Content `
-            $historicoPath `
-            -Raw |
-            ConvertFrom-Json
+    $historico = Get-Content `
+      $historicoPath `
+      -Raw |
+      ConvertFrom-Json
 
-        if ($historico -isnot [System.Array]) {
-            $historico = @($historico)
-        }
+    if ($historico -isnot [System.Array]) {
+      $historico = @($historico)
     }
-    catch {
+  }
+  catch {
 
-        $historico = @()
-    }
+    $historico = @()
+  }
 }
 
 $historico += $novaEntrada
 
 $historico |
-    ConvertTo-Json -Depth 5 |
-    Set-Content `
-    -Encoding UTF8 `
-    -Path $historicoPath
+  ConvertTo-Json -Depth 5 |
+  Set-Content `
+  -Encoding UTF8 `
+  -Path $historicoPath
 
 $css = @"
 <meta charset="utf-8">
