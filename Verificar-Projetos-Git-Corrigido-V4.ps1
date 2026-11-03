@@ -1,6 +1,7 @@
 param(
   [string]$Pasta = 'C:\Users\sebastiao.moura\Documents\1Portifolio',
-  [switch]$SemFetch
+  [switch]$SemFetch,
+  [switch]$SomenteProblemas
 )
 
 $ErrorActionPreference = 'Stop'
@@ -353,6 +354,16 @@ foreach ($repo in ($repos | Sort-Object)) {
   }
 }
 
+if ($SomenteProblemas) {
+
+  $resultados = $resultados |
+    Where-Object {
+
+      $_.Situacao -ne 'SINCRONIZADO'
+
+    }
+}
+
 if ($resultados.Count -eq 0) {
   Write-Host 'Nenhum repositório Git encontrado.'
   exit
@@ -436,7 +447,7 @@ $json = Join-Path $Pasta 'relatorio-git.json'
 
 $jsonData = [pscustomobject]@{
 
-  DataExecucao = Get-Date
+  DataExecucao = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
 
   TotalProjetos = $total
 
