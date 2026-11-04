@@ -267,10 +267,9 @@ foreach ($repo in ($repos | Sort-Object)) {
     (Invoke-Git $repo @(
         'log',
         '-1',
-        '--date=short',
+        '--date=format:%Y-%m-%d %H:%M:%S',
         '--pretty=%cd'
       )).Text
-
     $mensagemCommit =
     (Invoke-Git $repo @(
         'log',
@@ -439,6 +438,7 @@ $resultados |
   Projeto,
 Branch,
 Situacao,
+DataUltimoCommit,
 ArquivosAlterados,
 DiasSemAtividade,
 Abandonado `
