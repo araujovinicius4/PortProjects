@@ -1,7 +1,8 @@
 param(
   [string]$Pasta = 'C:\Users\sebastiao.moura\Documents\1Portifolio',
   [switch]$SemFetch,
-  [switch]$SomenteProblemas
+  [switch]$SomenteProblemas,
+  [string]$Projeto
 )
 
 $ErrorActionPreference = 'Stop'
@@ -74,8 +75,6 @@ function Get-GitHubVisibility {
     if ([string]::IsNullOrWhiteSpace($slug)) {
       return 'DESCONHECIDO'
     }
-
-    
 
     $headers = @{
       Accept = 'application/vnd.github+json'
@@ -418,6 +417,16 @@ if ($SomenteProblemas) {
   }
 }
 
+if (-not [string]::IsNullOrWhiteSpace($Projeto)) {
+
+  $resultados = $resultados |
+    Where-Object {
+
+    $_.Projeto -like "*$Projeto*"
+
+  }
+}
+
 if ($resultados.Count -eq 0) {
 
   if ($SomenteProblemas) {
@@ -626,16 +635,16 @@ $resultados |
   Sort-Object DataUltimoCommit -Descending |
   Select-Object `
   Projeto,
-  Visibilidade,
-  Branch,
-  Situacao,
-  DataUltimoCommit,
-  ArquivosAlterados,
-  Autor,
-  DiasSemAtividade,
-  Abandonado,
-  UltimoCommit,
-  Remoto |
+Visibilidade,
+Branch,
+Situacao,
+DataUltimoCommit,
+ArquivosAlterados,
+Autor,
+DiasSemAtividade,
+Abandonado,
+UltimoCommit,
+Remoto |
   ConvertTo-Html -Fragment
 
 $htmlContent =
