@@ -10,6 +10,7 @@ import sys
 import shlex
 import tempfile
 import unittest
+from html.parser import HTMLParser
 from datetime import datetime, timezone
 from unittest.mock import patch
 
@@ -19,6 +20,7 @@ from models.repository import Repository
 from services.health import prepare, health
 from services.github import github_slug, commit_url, visibility
 from reports.generator import generate
+from reports.html_report import remote_values
 from utils.commands import run, redact
 from utils.browser import open_report
 from main import main, parser
@@ -186,6 +188,53 @@ class GitTests(unittest.TestCase):
 
 
 class LogicTests(unittest.TestCase):
+    def test_remote_rendering(self):
+        class Elements(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.elements = []
+
+            def handle_starttag(self, tag, attrs):
+                self.elements.append((tag, dict(attrs)))
+
+        cases = [
+            ('https://github.com/a/b.git', 'https://github.com/a/b.git', 'https://github.com/a/b.git'),
+            ('git@github.com:a/b.git', 'git@github.com:a/b.git', 'https://github.com/a/b.git'),
+            ('ssh://git@gitlab.com:22/a/b.git', 'ssh://git@gitlab.com:22/a/b.git', 'https://gitlab.com/a/b.git'),
+            ('https://user:secret@github.com/a/b.git?token=hidden#private', 'https://github.com/a/b.git', 'https://github.com/a/b.git'),
+            ('ssh://user:secret@github.com/a/b.git', 'ssh://github.com/a/b.git', 'https://github.com/a/b.git'),
+            ('https://github.com/a/\"><img src=x onerror=alert(1)>.git', 'https://github.com/a/\"><img src=x onerror=alert(1)>.git', 'https://github.com/a/\"><img src=x onerror=alert(1)>.git'),
+            ('javascript:alert(1)', 'javascript:alert(1)', None),
+            ('', '', None), (None, '', None), ('—', '', None),
+        ]
+        for remote, display, target in cases:
+            with self.subTest(remote=remote), tempfile.TemporaryDirectory() as directory:
+                rows = prepare([Repository('teste', '/teste', Remoto=remote)], 180)
+                with contextlib.redirect_stdout(io.StringIO()):
+                    generate(Path(directory), rows, False, 180)
+                page = (Path(directory)/'relatorio-git.html').read_text(encoding='utf-8')
+                parsed = Elements()
+                parsed.feed(page)
+                buttons = [attrs for tag, attrs in parsed.elements if tag == 'button']
+                links = [attrs for tag, attrs in parsed.elements if tag == 'a']
+                self.assertEqual([b['data-remote'] for b in buttons], [display] if display else [])
+                self.assertEqual([a['href'] for a in links], [target] if target else [])
+                for link in links:
+                    self.assertEqual(link['target'], '_blank')
+                    self.assertEqual(link['rel'], 'noopener noreferrer')
+                self.assertFalse(any(tag == 'img' for tag, _ in parsed.elements))
+                self.assertNotIn('secret', page)
+                self.assertNotIn('hidden', page)
+                self.assertIn('navigator.clipboard.writeText', page)
+                self.assertIn("document.execCommand('copy')", page)
+                self.assertFalse(any('src' in attrs for tag, attrs in parsed.elements if tag == 'script'))
+
+    def test_remote_redacts_environment_tokens(self):
+        with patch.dict(os.environ, {'GH_TOKEN': 'secret'}):
+            display, target = remote_values('https://github.com/a/secret.git')
+        self.assertNotIn('secret', display)
+        self.assertNotIn('secret', target)
+
     def test_sort_inactivity_health_and_filter(self):
         repos=[Repository('sem','/sem'),Repository('antigo','/a',Situacao='ENVIAR',_timestamp=0),
                Repository('novo','/n',Situacao='SINCRONIZADO',_timestamp=86400)]
