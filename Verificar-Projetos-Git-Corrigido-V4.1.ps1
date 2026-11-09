@@ -381,10 +381,24 @@ foreach ($repo in ($repos | Sort-Object)) {
     'NAO'
   }
 
+  $scoreSaude =
+  switch ($situacao) {
+
+    'SINCRONIZADO'      { 100 }
+    'ALTERACOES LOCAIS' { 90 }
+    'RECEBER'           { 70 }
+    'ENVIAR'            { 60 }
+    'SEM UPSTREAM'      { 50 }
+    'DIVERGENTE'        { 20 }
+
+    default { 0 }
+  }
+
   $resultados += [pscustomobject]@{
 
     Projeto = $nome
     Visibilidade = $visibilidade
+    ScoreSaude = $scoreSaude
     Branch = $branch
     BranchPrincipal = $branchPrincipal
 
@@ -434,6 +448,11 @@ if ($resultados.Count -eq 0) {
     Write-Host ''
     Write-Host 'Nenhum projeto com problemas encontrado.' -ForegroundColor Green
   }
+  elseif (-not [string]::IsNullOrWhiteSpace($Projeto)) {
+
+    Write-Host ''
+    Write-Host "Nenhum projeto encontrado para o filtro: $Projeto" -ForegroundColor Yellow
+  }
   else {
 
     Write-Host 'Nenhum repositório Git encontrado.'
@@ -467,6 +486,37 @@ else {
 
   $indiceSaude = 0
 }
+
+$totalPublicos =
+(
+  $resultados |
+    Where-Object {
+    $_.Visibilidade -eq 'PUBLICO'
+  }
+).Count
+
+$totalProblemas =
+(
+    $resultados |
+    Where-Object {
+
+        $_.Situacao -notin @(
+            'SINCRONIZADO',
+            'ALTERACOES LOCAIS'
+        )
+    }
+).Count
+
+$totalAbandonados =
+(
+  $resultados |
+    Where-Object {
+    $_.Abandonado -eq 'SIM'
+  }
+).Count
+
+$totalAtivos =
+$total - $totalAbandonados
 Write-Host ""
 Write-Host "=====================================" -ForegroundColor Cyan
 Write-Host " RESUMO GERAL" -ForegroundColor Cyan
@@ -481,7 +531,7 @@ $resultados |
   ForEach-Object {
 
   Write-Host (
-    "{0,-25} {1,5}" -f
+    "{0,-25} {1}" -f
     $_.Name,
     $_.Count
   )
@@ -492,7 +542,7 @@ Write-Host (
   [char]0x00CD +
   "ndice de Sa" +
   [char]0x00FA +
-  "de: $indiceSaude %"
+  "de: $indiceSaude%"
 )
 Write-Host ""
 
@@ -501,6 +551,7 @@ $resultados |
   Format-Table `
   Projeto,
 Visibilidade,
+ScoreSaude,
 Branch,
 Situacao,
 DataUltimoCommit,
@@ -613,21 +664,87 @@ background:#f7f7f7;
 tr:hover{
 background:#e5e7eb;
 }
+.dashboard{
+display:flex;
+flex-wrap:wrap;
+gap:20px;
+margin-bottom:20px;
+}
+
+.card{
+background:white;
+border-radius:10px;
+padding:15px;
+min-width:180px;
+box-shadow:0 2px 6px rgba(0,0,0,0.1);
+}
+
+.card h3{
+margin:0;
+font-size:14px;
+color:#64748b;
+}
+
+.card p{
+margin-top:10px;
+font-size:28px;
+font-weight:bold;
+color:#0f172a;
+}
+
 </style>
 "@
 
 $html = Join-Path $Pasta 'relatorio-git.html'
 
 $cabecalhoHtml = @"
-<h1>Relat&oacute;rio Git V3</h1>
+<h1>Relat&oacute;rio Git</h1>
 
 <p>
 <b>Data de Execu&ccedil;&atilde;o:</b> $(Get-Date)
 <br>
 <b>Total de Projetos:</b> $total
 <br>
-<b>&Iacute;ndice de Sa&uacute;de:</b> $indiceSaude %
+<b>&Iacute;ndice de Sa&uacute;de:</b> $indiceSaude%
 </p>
+"@
+
+$dashboardHtml = @"
+
+<div class='dashboard'>
+
+<div class='card'>
+<h3>Projetos</h3>
+<p>$total</p>
+</div>
+
+<div class='card'>
+<h3>Saude</h3>
+<p>$indiceSaude%</p>
+</div>
+
+<div class='card'>
+<h3>Publicos</h3>
+<p>$totalPublicos</p>
+</div>
+
+<div class='card'>
+<h3>Problemas</h3>
+<p>$totalProblemas</p>
+</div>
+
+<div class='card'>
+<h3>Ativos</h3>
+<p>$totalAtivos</p>
+</div>
+
+<div class='card'>
+<h3>Abandonados</h3>
+<p>$totalAbandonados</p>
+</div>
+
+</div>
+
 "@
 
 $tabelaHtml =
@@ -636,6 +753,7 @@ $resultados |
   Select-Object `
   Projeto,
 Visibilidade,
+ScoreSaude,
 Branch,
 Situacao,
 DataUltimoCommit,
@@ -649,9 +767,13 @@ Remoto |
 
 $htmlContent =
 ConvertTo-Html `
-  -Title 'Relatório Git V3' `
+  -Title 'Relatório Git' `
   -Head $css `
-  -Body ($cabecalhoHtml + $tabelaHtml)
+  -Body (
+      $cabecalhoHtml +
+      $dashboardHtml +
+      $tabelaHtml
+  )
 
 [System.IO.File]::WriteAllText(
   $html,
@@ -669,14 +791,14 @@ Write-Host "TOP 5 MAIS RECENTES"
 Write-Host "-------------------"
 
 $resultados |
-  Sort-Object DiasSemAtividade |
+  Sort-Object DataUltimoCommit -Descending |
   Select-Object -First 5 |
   ForEach-Object {
 
   Write-Host (
-    "{0,-35} {1,5} dias" -f
+    "{0,-35} {1} " -f
     $_.Projeto,
-    $_.DiasSemAtividade
+    $_.DataUltimoCommit
   )
 }
 
@@ -685,14 +807,14 @@ Write-Host "TOP 5 MAIS ANTIGOS"
 Write-Host "------------------"
 
 $resultados |
-  Sort-Object DiasSemAtividade -Descending |
+  Sort-Object DataUltimoCommit |
   Select-Object -First 5 |
   ForEach-Object {
 
   Write-Host (
-    "{0,-35} {1,5} dias" -f
+    "{0,-35} {1} " -f
     $_.Projeto,
-    $_.DiasSemAtividade
+    $_.DataUltimoCommit
   )
 }
 
