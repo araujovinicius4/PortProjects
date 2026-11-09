@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "git-portfolio"
+version = "5.1.0"
+description = "Auditoria Git compatível com Portfolio Git Bash V5.1"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+git-portfolio = "main:main"
+
+[tool.setuptools]
+py-modules = ["main"]
+
+[tool.setuptools.packages.find]
+include = ["config*", "core*", "models*", "reports*", "services*", "utils*"]
+exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+reports = ["templates/*.html", "templates/*.css"]
