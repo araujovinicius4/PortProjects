@@ -1,5 +1,6 @@
 from pathlib import Path
 from models.repository import Repository
+from core.description import describe
 from core.git_sync import compare
 from core.git_commits import latest, pending
 from services.github import visibility
@@ -16,7 +17,7 @@ def count_changes(output: str) -> int:
 
 def inspect(repo: Path, root: Path, skip_fetch: bool = False) -> Repository:
     name = str(repo.relative_to(root)) if repo != root else repo.name
-    r = Repository(Projeto=name, Caminho=str(repo))
+    r = Repository(Projeto=name, Caminho=str(repo), Problema=describe(repo))
     branch = git(repo,'symbolic-ref','--quiet','--short','HEAD')
     r.Branch = branch.out.strip() if branch.code == 0 else '(detached HEAD)'
     r.BranchPrincipal = 'SIM' if r.Branch in ('main','master') else 'NAO'

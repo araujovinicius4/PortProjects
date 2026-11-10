@@ -1,6 +1,7 @@
 import html
 import re
 from collections import Counter
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 from services.github import commit_url as remote_commit_url
@@ -56,6 +57,12 @@ def write(root, run_at, all_rows, rows, health, inactive_days, export_rows):
                      f'{html.escape(name)} <strong>{n}</strong></li>' for name,n in sorted(counts.items(),key=lambda x:(-x[1],x[0])))
 
     def render_cell(r,c):
+        if c == 'Projeto':
+            label = html.escape(str(r[c]), quote=True)
+            problem = html.escape(r.get('Problema', 'Descrição do problema não disponível'), quote=True)
+            return (f'<span class="project-description"><button type="button" class="project-name" '
+                    f'aria-expanded="false">{label}</button>'
+                    f'<span class="problem-panel" role="tooltip" hidden>{problem}</span></span>')
         if c == 'Remoto':
             display, target = remote_values(r[c])
             if not display:
@@ -85,7 +92,11 @@ def write(root, run_at, all_rows, rows, health, inactive_days, export_rows):
 
     trs = '\n'.join('<tr>'+''.join('<td>'+render_cell(r,c)+'</td>' for c in html_cols)+'</tr>' for r in export_rows)
     heads = ''.join('<th>'+html.escape(c)+'</th>' for c in html_cols)
-    escaped_run_at = html.escape(run_at)
+    executed_at = datetime.fromisoformat(run_at)
+    offset = executed_at.strftime('%z')
+    zone = f' (UTC{offset[0]}{offset[1:3]}:{offset[3:5]})' if offset else ''
+    zone = zone.replace('-', '−')
+    escaped_run_at = html.escape(executed_at.strftime('%d/%m/%Y às %H:%M:%S') + zone)
     displayed = len(rows)
     chart_label = html.escape('; '.join(f'{k}: {v}' for k,v in counts.items()),quote=True)
     template_dir = Path(__file__).parent / 'templates'

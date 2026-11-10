@@ -176,6 +176,7 @@ class GitTests(unittest.TestCase):
                 for row in data['Projetos']:
                     # Git Bash emits /c/... and Python emits C:\... on Windows.
                     row.pop('Caminho')
+                    row.pop('Problema', None)
             self.assertEqual(actual,reference)
             # All CSV fields except platform-dependent absolute paths are identical.
             before=list(csv.DictReader(io.StringIO(reference_csv.decode('utf-8-sig'))))
@@ -184,6 +185,7 @@ class GitTests(unittest.TestCase):
             for data in (before,after):
                 for row in data:
                     row.pop('Caminho')
+                    row.pop('Problema', None)
             self.assertEqual(after,before)
 
 
@@ -201,7 +203,7 @@ class LogicTests(unittest.TestCase):
             ('https://github.com/a/b.git', 'https://github.com/a/b.git', 'https://github.com/a/b.git'),
             ('git@github.com:a/b.git', 'git@github.com:a/b.git', 'https://github.com/a/b.git'),
             ('ssh://git@gitlab.com:22/a/b.git', 'ssh://git@gitlab.com:22/a/b.git', 'https://gitlab.com/a/b.git'),
-            ('https://user:secret@github.com/a/b.git?token=hidden#private', 'https://github.com/a/b.git', 'https://github.com/a/b.git'),
+            ('https://user:secret@github.com/a/b.git?token=private-query-token#private', 'https://github.com/a/b.git', 'https://github.com/a/b.git'),
             ('ssh://user:secret@github.com/a/b.git', 'ssh://github.com/a/b.git', 'https://github.com/a/b.git'),
             ('https://github.com/a/\"><img src=x onerror=alert(1)>.git', 'https://github.com/a/\"><img src=x onerror=alert(1)>.git', 'https://github.com/a/\"><img src=x onerror=alert(1)>.git'),
             ('javascript:alert(1)', 'javascript:alert(1)', None),
@@ -217,14 +219,14 @@ class LogicTests(unittest.TestCase):
                 parsed.feed(page)
                 buttons = [attrs for tag, attrs in parsed.elements if tag == 'button']
                 links = [attrs for tag, attrs in parsed.elements if tag == 'a']
-                self.assertEqual([b['data-remote'] for b in buttons], [display] if display else [])
+                self.assertEqual([b['data-remote'] for b in buttons if 'data-remote' in b], [display] if display else [])
                 self.assertEqual([a['href'] for a in links], [target] if target else [])
                 for link in links:
                     self.assertEqual(link['target'], '_blank')
                     self.assertEqual(link['rel'], 'noopener noreferrer')
                 self.assertFalse(any(tag == 'img' for tag, _ in parsed.elements))
                 self.assertNotIn('secret', page)
-                self.assertNotIn('hidden', page)
+                self.assertNotIn('private-query-token', page)
                 self.assertIn('navigator.clipboard.writeText', page)
                 self.assertIn("document.execCommand('copy')", page)
                 self.assertFalse(any('src' in attrs for tag, attrs in parsed.elements if tag == 'script'))

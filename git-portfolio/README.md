@@ -95,7 +95,23 @@ Campos de cada projeto, na ordem do CSV: Projeto, Visibilidade, Branch, BranchPr
 
 Como na V5.1, os três relatórios são substituídos em cada execução; o histórico é acumulativo. Evite execuções simultâneas na mesma pasta, pois não há bloqueio de escrita. Fetch falho impede classificar a sincronização a partir de referências potencialmente antigas. Com `--sem-fetch`, a comparação usa as referências locais existentes.
 
-## Testes
+## Descrição do problema
+
+Cada projeto exporta o campo `Problema` no JSON e no CSV. No HTML, passe o mouse sobre o nome, clique nele ou use Tab para abrir o painel; Escape fecha. O painel acompanha a área visível da tela. HTML, CSS e JavaScript ficam no mesmo arquivo, funcionando offline.
+
+A extração usa somente arquivos locais, sem IA ou APIs. Na raiz de cada repositório, um `portfolio.json` opcional tem prioridade:
+
+```json
+{"problema": "Evita a perda de documentos ao organizar cópias de segurança locais."}
+```
+
+O campo deve ser uma string descritiva, com ao menos 20 caracteres e quatro palavras. JSON inválido, campo vazio ou tipo incorreto fazem a extração continuar pelo README. O módulo `core/description.py` procura README na raiz sem distinguir maiúsculas e minúsculas (README, README.md e outras extensões). Prefere seções Problema, Objetivo, Sobre ou Descrição; na ausência de conteúdo útil nelas, usa o primeiro parágrafo descritivo relevante.
+
+Títulos isolados, badges, imagens, blocos de código, comandos e instruções de instalação são ignorados. A extração remove marcação e limita o texto a 300 caracteres, preferindo terminar uma frase. Nenhuma finalidade é deduzida do nome do projeto. Sem conteúdo suficiente, ou com README ausente ou ilegível, usa `Descrição do problema não disponível`, sem interromper a auditoria. O conteúdo é escapado ao gerar HTML.
+
+O campo `Problema` é acrescentado ao final do CSV. O teste de compatibilidade ignora esse campo novo ao comparar com o Bash V5.1.
+
+## Execução dos testes
 
 Na pasta `git-portfolio`:
 

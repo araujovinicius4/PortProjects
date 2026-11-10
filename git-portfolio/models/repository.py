@@ -24,6 +24,7 @@ class Repository:
     CommitsPendentes: list[Commit] = field(default_factory=list)
     DiasSemAtividade: int | None = None
     Inativo: str = 'NAO'
+    Problema: str = 'Descrição do problema não disponível'
     _timestamp: int | None = None
 
     def row(self) -> dict:

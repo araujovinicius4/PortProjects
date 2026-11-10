@@ -13,3 +13,6 @@ tr:hover{background:#e7eef8}td{max-width:360px;overflow-wrap:anywhere}
 .pending-content ol{padding-left:23px}.pending-content li{margin:10px 0;overflow-wrap:anywhere}
 .commit-meta{font-size:12px;color:#475569;margin-top:3px}a{color:#1d4ed8}
 .copy-remote{cursor:pointer;margin-right:6px;padding:3px 8px;white-space:nowrap}
+.project-name{font:inherit;color:#1d4ed8;background:none;border:0;padding:0;text-align:left;text-decoration:underline;cursor:pointer}
+.project-name:focus-visible{outline:2px solid #2563eb;outline-offset:4px}
+.problem-panel{position:fixed;z-index:1000;box-sizing:border-box;width:320px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px);overflow:auto;padding:12px;background:#172033;color:white;border-radius:6px;box-shadow:0 4px 16px #0004;line-height:1.5;white-space:normal;overflow-wrap:anywhere}
