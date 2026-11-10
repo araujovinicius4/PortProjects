@@ -1,5 +1,19 @@
 # Git Portfolio
 
+O Git Portfolio reúne a situação dos seus repositórios Git em um único relatório.
+- Localiza projetos dentro de uma pasta e suas subpastas.
+- Verifica sincronização: sincronizado, enviar, receber, divergente ou com alterações locais.
+- Atualiza referências remotas com fetch, sem executar pull ou push.
+- Mostra commits pendentes para receber.
+- Exibe informações: branch, visibilidade, autor, último commit e arquivos alterados.
+- Identifica inatividade e ordena projetos pela atividade mais recente.
+- Apresenta o problema que cada projeto resolve, extraído do README ou de portfolio.json.
+- Permite copiar e abrir o link remoto.
+- Gera HTML, CSV e JSON, com gráfico de situações, índice de saúde e histórico das execuções.
+- Filtra somente projetos com pendências.
+Funciona em Windows e Linux, usando Python e Git.
+
+
 Migração modular do `verificar-projetos-git-v5-1.sh`, preservado na raiz do repositório como referência. Audita repositórios locais, consulta seus remotos e produz relatórios cronológicos em português. A aplicação usa apenas a biblioteca padrão.
 
 ## Requisitos e instalação
